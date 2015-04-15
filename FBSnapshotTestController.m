@@ -354,6 +354,8 @@ typedef NS_ENUM(NSUInteger, FBTestSnapshotFileNameType) {
     layer = (CALayer *)viewOrLayer;
     [layer layoutIfNeeded];
     return [self _renderLayer:layer];
+  } else if ([viewOrLayer isKindOfClass:[NSArray class]]) {
+    return [self _renderWindows:viewOrLayer];
   } else {
     [NSException raise:@"Only UIView and CALayer classes can be snapshotted" format:@"%@", viewOrLayer];
   }
@@ -400,6 +402,21 @@ typedef NS_ENUM(NSUInteger, FBTestSnapshotFileNameType) {
   }
   [view layoutIfNeeded];
   return [self _renderLayer:view.layer];
+}
+
+- (UIImage *)_renderWindows:(NSArray *)windows
+{
+  UIGraphicsBeginImageContextWithOptions([[windows objectAtIndex:0] bounds].size, YES, 0);
+  for (UIWindow *window in windows) {
+    if ([window respondsToSelector:@selector(drawViewHierarchyInRect:afterScreenUpdates:)]) {
+      [window drawViewHierarchyInRect:window.bounds afterScreenUpdates:YES];
+    } else {
+      [window.layer renderInContext:UIGraphicsGetCurrentContext()];
+    }
+  }
+  UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+  UIGraphicsEndImageContext();
+  return image;
 }
 
 @end
